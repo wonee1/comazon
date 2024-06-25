@@ -1,0 +1,85 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String          @id @default(uuid()) ////uuid는 36자로 이루어진 id형식
+  email          String          @unique
+  firstName      String
+  lastName       String
+  address        String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  orders         Order[] //대괄호는 배열,  order 여러개를 뜻한다 
+  //1의 부분엔 다 모델의 배열을 정의 
+  userPreference UserPreference?  //일대일관계이기 때문에 대괄호를 지우고 물음표를 붙인다
+  savedProducts   Product[] //다대다 관계이기 때문에 타 모델 배열을 저장 
+}
+
+model Product {
+  id          String      @id @default(uuid())
+  name        String
+  description String?
+  category    Category
+  price       Float
+  stock       Int
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  orderItems  OrderItem[]
+  savedUsers  User[] //다대다 관계이기 때문에 타 모델 배열을 저장 
+}
+
+model UserPreference {
+  id           String   @id @default(uuid())
+  receiveEmail Boolean
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String   @unique // 일대일관계
+}
+
+model Order {
+  id         String      @id @default(uuid())
+  status     OrderStatus @default(PENDING)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  user       User?       @relation(fields: [userId], references: [id], onDelete: SetNull)//편의성을 위한 관계 필드 //userId 필드가 User 모델의 id 필드를 참조한다는 걸 뜻한다 
+  userId     String? //실제 foreign 키 필드 
+//다 부분엔 foreign 키 정의 
+  orderItems OrderItem[]
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  unitPrice Float
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  order     Order    @relation(fields: [orderId], references: [id])
+  orderId   String
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String
+}
+
+enum Category {
+  FASHION
+  BEAUTY
+  SPORTS
+  ELECTRONICS
+  HOME_INTERIOR
+  HOUSEHOLD_SUPPLIES
+  KITCHENWARE
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETE
+}
